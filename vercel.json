@@ -1,0 +1,13 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://polar-sys-waypoint.vercel.app https://polar-sys-waypoint.app http://localhost:5173 http://localhost:5174;"
+        }
+      ]
+    }
+  ]
+}

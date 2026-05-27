@@ -1,0 +1,86 @@
+ BORDER STROKES UNDER CSS TRANSFORM SCALE
+ ==========================================
+
+ This project draws the main UI on a fixed “artboard” (`#artboard`, e.g. 2560×1440 CSS px) and scales it down to fit the window:
+
+   board.style.transform = `scale(${scale})`;
+   board.style.setProperty('--artboard-scale', String(scale));
+
+ `scale = min(innerWidth/WIDTH, innerHeight/HEIGHT)`.
+
+ Problems and fixes described below assume this pattern (or anything that applies uniform `transform: scale(...)` around large regions of UI).
+
+
+ 1) Why plain `1px` borders look wrong
+ ----------------------------------------
+
+ After scaling with factor `s`, a literal **layout `1px`** border is multiplied by `s` toward the viewport — too thin when `s < 1`, too thick on screen when `s > 1` unless compensated.
+
+ Inverse width **`~1/s` in layout** (stored as `--hairline`) brings apparent stroke closer to **~1 reference pixel after** scaling.
+
+
+ 2) Hairline width variable (`--hairline`)
+ ------------------------------------------
+
+ On `#artboard` we define:
+
+   --artboard-scale: 1;   /* overwritten in JS to match transform scale */
+   --hairline: min(16px, calc(1px / max(var(--artboard-scale), 0.0001)));
+
+ Inverse compensation **does not clamp the divisor at 1** when `scale > 1` (large window / zoomed “out”).
+ A cap at 1 was making layout borders stuck at ≥1 px when scale rose, so `1 × scale` on screen grew fat.
+ Now `1px / scale` can go below 1 px layout when scale exceeds 1, so after `transform` the stroke stays about **one device pixel**.
+ `min(..., 16px)` avoids multi‑megapixel layout strokes when `--artboard-scale` hits ~0.
+
+ Use **`var(--hairline)`** anywhere you want that stroke-weight behavior after the artboard transform.
+
+ - **Divider color** is separate — e.g. `border: var(--hairline) solid var(--some-color)`.
+ - **Inset rules** implemented with box-shadow use the thickness in the shadow position, e.g.  
+     `box-shadow: inset 0 var(--hairline) 0 0 var(--separator-color);`  
+     `box-shadow: 0 var(--hairline) 0 0 var(--separator-color);`
+
+
+ 3) Explosion guard (tiny scale only)
+ --------------------------------------
+
+ When `--artboard-scale` approaches **0**, `1/scale` becomes huge. **`min(..., 16px)`** caps that in layout units.
+ Separate **flooring** (`max(scale, epsilon)`) avoids division by zero; **epsilon** keeps the divisor tiny so normal small scales still follow `1/scale`.
+
+ Sub-pixel layout widths when **`scale > 1`** are intentional—they keep stroke weight stable on screen; some GPUs may soften them slightly.
+
+
+ 4) Inset box-shadow vs real border on flex shells
+ ---------------------------------------------------
+
+ **Do not use an inset `box-shadow` as the only outer ring on a flex container whose children paint solid backgrounds to the edges.** In browsers, inset shadows on that box sit *under* descendants; opaque flex children hide most of the “ring”. Prefer **`border`** on that shell (still using `var(--hairline)` for width).
+
+ Outer `box-shadow: 0 0 0 1px` can also be clipped by `overflow: hidden` on the same element; borders are not solved that way.
+
+ This is why the monitor “combo” fields use a real **border** on `.monitor-combo`, not an inset full-frame shadow.
+
+
+ 5) Twitter-style ideas (optional)
+ ----------------------------------
+
+ Hairlines as **offset box-shadows** (e.g. `0 1px 0 0`) avoid some double-border stacking between siblings; **inset** top shadows work for row dividers. **Colors stay your tokens** — only the technique changes.
+
+ On this project, separator *thickness* for those shadows should still use **`var(--hairline)`** when drawn on the scaled artboard so thickness stays stable across window sizes.
+
+
+ 6) Applying elsewhere (checklist)
+ -----------------------------------
+
+ - Keep **one source of truth** for scale: `--artboard-scale` on the scaled root, refreshed on resize with the **same number** passed to `transform: scale(...)`.
+ - Define **`--hairline`** on that root (inheritance makes it available to descendants).
+ - Replace fixed **1px** strokes on borders and stroke-like **`box-shadow` spreads** (and analogous inset offsets for 1px rules) with **`var(--hairline)`** where stroke weight should survive scaling.
+ - **Do not** multiply decorative **drop-shadow** blur/offset by `1/scale` unless you explicitly want sharper UI chrome; soft shadows often intentionally scale with the canvas.
+ - Charts / SVG: optional **`vector-effect: non-scaling-stroke`** for strokes defined in SVG when you want strokes *not* to scale with SVG viewBox transforms (different problem than artboard DOM scale).
+
+
+ 7) This repo (monitor page)
+ -----------------------------
+
+ Monitor-specific rules under `.monitor-page` use **`var(--hairline)`** for borders and hairline-thickness box-shadows (page description underline, toolbar combos, timeframe ring, metric row, chart panel, legend chip, chart foot, task table, issue panel, step list, step links, etc.).  
+ `--monitor-outline-w` is aliased to **`var(--hairline)`** for consistency.
+
+ Reference implementation: `src/main.js` (`fitArtboard`), `src/styles.css` (`.artboard` and `.monitor-page` …).

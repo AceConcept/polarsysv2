@@ -1,0 +1,33 @@
+{
+  "name": "stepscreen",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Polar Systems UI package",
+  "type": "module",
+  "main": "./src/main.js",
+  "module": "./src/main.js",
+  "exports": {
+    ".": "./src/main.js",
+    "./src/*": "./src/*",
+    "./public/*": "./public/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "public",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AceConcept/polar-sys.git"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}

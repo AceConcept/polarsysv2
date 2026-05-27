@@ -1,9 +1,73 @@
 import { shell } from '../layout.js';
 import { btnIconMarkup } from '../btnIcon.js';
 import iconDropdownArrow from '../icons/incident-page/dropdown-arrow.svg?raw';
-import iconIssueArrow from '../icons/monitor-page/issue-arrow.svg?raw';
-
 const CHART_PLOT_WIDTH = 1600;
+
+/** Issue Analysis aside width: 543px @ 16px root */
+const MONITOR_ISSUE_PANEL_W_REM = 33.9375;
+
+const MONITOR_ISSUE_LINK_ICON = `<svg class="issue-analysis-step__action-icon" width="18" height="18" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17.707 7.29163L13.5404 7.29163V9.37496L17.707 9.37496C19.4258 9.37496 20.832 10.7812 20.832 12.5C20.832 14.2187 19.4258 15.625 17.707 15.625H13.5404V17.7083H17.707C20.582 17.7083 22.9154 15.375 22.9154 12.5C22.9154 9.62496 20.582 7.29163 17.707 7.29163ZM11.457 15.625L7.29036 15.625C5.57161 15.625 4.16536 14.2187 4.16536 12.5C4.16536 10.7812 5.57161 9.37496 7.29036 9.37496L11.457 9.37496V7.29163L7.29036 7.29163C4.41536 7.29163 2.08203 9.62496 2.08203 12.5C2.08203 15.375 4.41536 17.7083 7.29036 17.7083H11.457V15.625ZM8.33203 11.4583L16.6654 11.4583V13.5416L8.33203 13.5416V11.4583Z" fill="currentColor"/></svg>`;
+
+const MONITOR_ISSUE_MENU_ICON = `<svg class="issue-analysis-panel__menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`;
+
+const MONITOR_ISSUE_STEPS = [
+  {
+    title: 'Correlate with prior telemetry logs',
+    desc: 'Temporarily segment this endpoint',
+    action: { label: 'How to Isolate Host', href: '#/monitor' },
+  },
+  {
+    title: 'Correlate with prior telemetry logs',
+    desc: 'Temporarily segment this endpoint',
+    action: { label: 'How to Isolate Host', href: '#/incident' },
+  },
+  {
+    title: 'Correlate with prior telemetry logs',
+    desc: 'Compile time-series data, node relationships, and AI-detected',
+  },
+  {
+    title: 'Correlate with prior telemetry logs',
+    desc: 'Reconstruct the last 60 seconds of packet flow',
+    sandbox: true,
+  },
+  {
+    title: 'Correlate with prior telemetry logs',
+    desc: 'Temporarily segment this endpoint',
+  },
+];
+
+function renderMonitorIssueAnalysisHtml() {
+  const stepsHtml = MONITOR_ISSUE_STEPS.map((step, index) => {
+    const num = index + 1;
+    const actionHtml = step.action
+      ? `<a class="issue-analysis-step__action" href="${step.action.href}">${MONITOR_ISSUE_LINK_ICON}<span class="issue-analysis-step__action-text">${step.action.label}</span></a>`
+      : '';
+    const sandboxAttr = step.sandbox ? ' id="step-sandbox" tabindex="0" role="button"' : '';
+
+    return `
+      <li class="issue-analysis-step${step.sandbox ? ' issue-analysis-step--sandbox' : ''}"${sandboxAttr}>
+        <span class="issue-analysis-step__num" aria-hidden="true">${num}</span>
+        <div class="issue-analysis-step__content">
+          <h3 class="issue-analysis-step__title">${step.title}</h3>
+          <p class="issue-analysis-step__desc">${step.desc}</p>
+          ${actionHtml}
+        </div>
+      </li>`;
+  }).join('');
+
+  return `
+    <aside class="monitor-issue-aside">
+      <div class="issue-analysis-panel">
+        <header class="issue-analysis-panel__head">
+          ${MONITOR_ISSUE_MENU_ICON}
+          <h2 class="issue-analysis-panel__title">Issue Analysis</h2>
+        </header>
+        <ol class="issue-analysis-panel__steps">
+          ${stepsHtml}
+        </ol>
+      </div>
+    </aside>`;
+}
 /** SVG viewBox height for the telemetry chart. */
 const CHART_VIEWBOX_HEIGHT = 260;
 /** Y-axis tick values (40→20→10→0 top→bottom); HTML labels sit beside the SVG so they are not stretched with the plot. */
@@ -177,219 +241,202 @@ export function renderMonitor() {
 
   const content = `
     <section class="monitor-page">
-      <div class="page-head page-head-monitor">
-        <div>
-          <h1 class="page-title page-title-monitor monitor-title-row">
-            <a class="monitor-host-link" href="#/incident">db-core-02.internal</a>
-            <span class="btn btn-dark incident-status-btn">${btnIconMarkup()}<span>Database Server</span></span>
-          </h1>
-          <p class="desc monitor-desc">
-            Stores structured information—everything from user credentials and transaction logs to internal audit trails,
-            application telemetry, and threat event data gathered by the SOC's tools.
-          </p>
-        </div>
-      </div>
-
-      <div class="controls-bar">
-        <div class="monitor-controls-group">
-          <div class="monitor-combo monitor-combo--query" aria-label='Query "DoS" OR "Port Scan"'>
-            <span class="monitor-combo-label">Query</span>
-            <span class="monitor-combo-value">"DoS" OR "Port Scan"</span>
-          </div>
-          <div class="monitor-combo monitor-combo--severity" aria-label='Severity >= "medium"'>
-            <span class="monitor-combo-label">Severity</span>
-            <span class="monitor-combo-value">&gt;= "medium"</span>
-          </div>
-          <div class="control">
-            <div class="monitor-timeframe-wrap">
-              <button
-                type="button"
-                class="select-like monitor-timeframe-select"
-                aria-label="Time range selector"
-                aria-haspopup="menu"
-                aria-expanded="false"
-              >
-                <span class="monitor-timeframe-label">Today</span>
-                <span class="monitor-dropdown-caret" aria-hidden="true">${iconDropdownArrow.trim()}</span>
-              </button>
-              <div class="monitor-timeframe-menu" role="menu" aria-label="Time range options" hidden>
-                <button type="button" class="monitor-timeframe-menu-item is-selected" role="menuitemradio" aria-checked="true" data-monitor-timeframe="today">Today</button>
-                <button type="button" class="monitor-timeframe-menu-item" role="menuitemradio" aria-checked="false" data-monitor-timeframe="2weeks">2 weeks</button>
-                <button type="button" class="monitor-timeframe-menu-item" role="menuitemradio" aria-checked="false" data-monitor-timeframe="1month">1 month</button>
-                <button type="button" class="monitor-timeframe-menu-item" role="menuitemradio" aria-checked="false" data-monitor-timeframe="3months">3 months</button>
-                <button type="button" class="monitor-timeframe-menu-item" role="menuitemradio" aria-checked="false" data-monitor-timeframe="custom">Custom Range</button>
+      <div class="monitor-top-groups">
+        <div class="monitor-top-group monitor-top-group--header">
+          <div class="page-head monitor-header">
+            <div class="monitor-header-body">
+              <div class="monitor-actions">
+                <div class="monitor-actions-main">
+                  <div class="monitor-title-wrap">
+                    <h1 class="page-title monitor-title">
+                      <a class="monitor-host-link" href="#/incident">db-core-02.internal</a>
+                    </h1>
+                  </div>
+                  <div class="monitor-header-tags">
+                    <span class="btn btn-dark incident-status-btn">Database Server</span>
+                  </div>
+                </div>
+              </div>
+              <p class="desc monitor-desc">
+                Stores structured information—everything from user credentials and transaction logs to internal audit trails,
+                application telemetry, and threat event data gathered by the SOC's tools.
+              </p>
+              <div class="meta-row incident-meta-row">
+                <button type="button" class="incident-meta-btn">
+                  <span class="incident-meta-label">Incident ID: </span><span class="incident-meta-value">#8846</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+                <button type="button" class="incident-meta-btn">
+                  <span class="incident-meta-label">Detected By: </span><span class="incident-meta-value">Leo2.0Y / Automated Threat Correlation Engine</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
               </div>
             </div>
           </div>
-          <button type="button" class="btn btn-dark" aria-label="Filter">${btnIconMarkup()}</button>
         </div>
-        <button type="button" class="btn btn-ghost">${btnIconMarkup()}<span>Run Query</span></button>
+      </div>
+      <div class="monitor-top-divider-wrap"><div class="monitor-top-divider" aria-hidden="true"></div></div>
+      <div class="monitor-top-group monitor-top-group--toolbar">
+        <section class="monitor-toolbar controls-bar" aria-label="Query and filter controls">
+          <div class="monitor-toolbar__fields monitor-controls-group">
+            <div class="monitor-field monitor-field--combo monitor-field--query" aria-label='Query "DoS" OR "Port Scan"'>
+              <span class="monitor-field__label">Query</span>
+              <span class="monitor-field__value">"DoS" OR "Port Scan"</span>
+            </div>
+            <div class="monitor-field monitor-field--combo monitor-field--severity" aria-label='Severity >= "medium"'>
+              <span class="monitor-field__label">Severity</span>
+              <span class="monitor-field__value">&gt;= "medium"</span>
+            </div>
+            <div class="monitor-field monitor-field--timeframe">
+              <div class="monitor-timeframe-wrap">
+                <button
+                  type="button"
+                  class="monitor-timeframe-select"
+                  aria-label="Time range selector"
+                  aria-haspopup="menu"
+                  aria-expanded="false"
+                >
+                  <span class="monitor-timeframe-label">Today</span>
+                  <span class="monitor-dropdown-caret" aria-hidden="true">${iconDropdownArrow.trim()}</span>
+                </button>
+                <div class="monitor-timeframe-menu" role="menu" aria-label="Time range options" hidden>
+                  <button type="button" class="monitor-timeframe-menu-item is-selected" role="menuitemradio" aria-checked="true" data-monitor-timeframe="today">Today</button>
+                  <button type="button" class="monitor-timeframe-menu-item" role="menuitemradio" aria-checked="false" data-monitor-timeframe="2weeks">2 weeks</button>
+                  <button type="button" class="monitor-timeframe-menu-item" role="menuitemradio" aria-checked="false" data-monitor-timeframe="1month">1 month</button>
+                  <button type="button" class="monitor-timeframe-menu-item" role="menuitemradio" aria-checked="false" data-monitor-timeframe="3months">3 months</button>
+                  <button type="button" class="monitor-timeframe-menu-item" role="menuitemradio" aria-checked="false" data-monitor-timeframe="custom">Custom Range</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-ghost monitor-toolbar__submit">${btnIconMarkup()}<span>Run Query</span></button>
+        </section>
       </div>
 
       <div class="monitor-layout">
         <div class="monitor-main">
-          <div class="metrics-row">
-            ${[
-              ['All Issues', '125', ''],
-              ['Unauthorized Port Scan', '67', 'selected'],
-              ['Recursive DNS Loop', '20', ''],
-              ['Failed Logins', '5', ''],
-              ['External IP Correlation', '33', ''],
-            ]
-              .map(
-                ([label, val, sel]) =>
-                  `<div class="metric-card ${sel}" data-metric="${label}">
-                    <div class="label">${label}</div>
-                    <div class="value">${val}</div>
-                  </div>`,
-              )
-              .join('')}
-          </div>
+          <div class="monitor-main-column">
+            <section class="monitor-graph" aria-label="Host telemetry chart">
+              <div class="monitor-graph__metrics metrics-row">
+                ${[
+                  ['All Issues', '125', ''],
+                  ['Unauthorized Port Scan', '67', 'selected'],
+                  ['Recursive DNS Loop', '20', ''],
+                  ['Failed Logins', '5', ''],
+                  ['External IP Correlation', '33', ''],
+                ]
+                  .map(
+                    ([label, val, sel]) =>
+                      `<div class="metric-card ${sel}" data-metric="${label}">
+                        <div class="label">${label}</div>
+                        <div class="value">${val}</div>
+                      </div>`,
+                  )
+                  .join('')}
+              </div>
+              <div class="monitor-graph__body">
+                <div class="chart-panel">
+                  <div class="chart-head">
+                    <div class="chart-legend-chip">
+                      <span class="chart-legend-dot"></span>
+                      Unauthorized Port Scan
+                    </div>
+                    <span class="chart-clock">00:15 UTC</span>
+                  </div>
+                  <div class="chart-big hidden">67</div>
+                  <div class="chart-svg-wrap">
+                    <div class="chart-plot-row">
+                      <div class="chart-y-axis-labels">
+                        ${MONITOR_CHART_Y_TICK_VALUES.map((v) => `<span>${v}</span>`).join('')}
+                      </div>
+                      <svg
+                        class="chart-svg"
+                        viewBox="0 0 ${CHART_PLOT_WIDTH} ${CHART_VIEWBOX_HEIGHT}"
+                        preserveAspectRatio="none"
+                      >
+                        <g class="chart-grid-lines chart-grid-lines--horizontal" aria-hidden="true">${chartYGuidesSvg}</g>
+                        <polyline fill="none" stroke="#3b82f6" stroke-width="0.125rem" points="${chartPoints}" stroke-linejoin="miter" stroke-linecap="square" vector-effect="non-scaling-stroke"/>
+                      </svg>
+                    </div>
+                    <div class="chart-x-axis-labels">
+                      <span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>24:00</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="chart-foot">
+                  <span class="chart-foot-host">db-core-02.internal</span>
+                  <button type="button" class="chart-foot-link">Manage Issues</button>
+                </div>
+              </div>
+            </section>
 
-          <div class="chart-panel">
-            <div class="chart-head">
-              <div class="chart-legend-chip">
-                <span class="chart-legend-dot"></span>
-                Unauthorized Port Scan
-              </div>
-              <span class="chart-clock">00:15 UTC</span>
-            </div>
-            <div class="chart-big hidden">67</div>
-            <div class="chart-svg-wrap">
-              <div class="chart-plot-row">
-                <div class="chart-y-axis-labels">
-                  ${MONITOR_CHART_Y_TICK_VALUES.map((v) => `<span>${v}</span>`).join('')}
+            <section class="monitor-table" aria-label="Related root tasks">
+              <div class="monitor-task-table-wrap">
+                <div class="monitor-task-table">
+                  <div class="monitor-task-head">
+                    <span>TIME (UTC) ↑</span>
+                    <span>ROOT TASK</span>
+                    <span>STATUS</span>
+                    <span>SEVERITY</span>
+                    <span>AFFECTED HOST</span>
+                  </div>
+                  <div class="monitor-task-row">
+                    <span>11:02:11AM</span>
+                    <div class="monitor-task-cell monitor-task-cell--name">
+                      <div class="task-name">DAILY_FINANCE_AGGREGATE</div>
+                      <div class="task-sub">0 sub tasks</div>
+                    </div>
+                    <span class="task-status is-on">ON</span>
+                    <span class="task-severity"><span class="task-severity-dot"></span>Medium</span>
+                    <a href="#/incident">web-prod-01</a>
+                  </div>
+                  <div class="monitor-task-row">
+                    <span>11:02:11AM</span>
+                    <div class="monitor-task-cell monitor-task-cell--name">
+                      <div class="task-name">INVENTORY_SYNC_TASK</div>
+                      <div class="task-sub">0 sub tasks</div>
+                    </div>
+                    <span class="task-status is-off">OFF</span>
+                    <span class="task-severity"><span class="task-severity-dot"></span>Low</span>
+                    <a href="#/incident">web-prod-01</a>
+                  </div>
+                  <div class="monitor-task-row">
+                    <span>11:06:42AM</span>
+                    <div class="monitor-task-cell monitor-task-cell--name">
+                      <div class="task-name">AUTH_TOKEN_ROTATION</div>
+                      <div class="task-sub">2 sub tasks</div>
+                    </div>
+                    <span class="task-status is-on">ON</span>
+                    <span class="task-severity"><span class="task-severity-dot"></span>Medium</span>
+                    <a href="#/incident">auth-svc-01</a>
+                  </div>
+                  <div class="monitor-task-row">
+                    <span>11:11:08AM</span>
+                    <div class="monitor-task-cell monitor-task-cell--name">
+                      <div class="task-name">EDGE_FIREWALL_RELOAD</div>
+                      <div class="task-sub">1 sub task</div>
+                    </div>
+                    <span class="task-status is-off">OFF</span>
+                    <span class="task-severity"><span class="task-severity-dot"></span>Low</span>
+                    <a href="#/incident">edge-gateway-02</a>
+                  </div>
+                  <div class="monitor-task-row">
+                    <span>11:14:27AM</span>
+                    <div class="monitor-task-cell monitor-task-cell--name">
+                      <div class="task-name">DNS_RECURSION_AUDIT</div>
+                      <div class="task-sub">3 sub tasks</div>
+                    </div>
+                    <span class="task-status is-on">ON</span>
+                    <span class="task-severity"><span class="task-severity-dot"></span>Medium</span>
+                    <a href="#/incident">db-core-02.internal</a>
+                  </div>
                 </div>
-                <svg
-                  class="chart-svg"
-                  viewBox="0 0 ${CHART_PLOT_WIDTH} ${CHART_VIEWBOX_HEIGHT}"
-                  preserveAspectRatio="none"
-                >
-                  <g class="chart-grid-lines chart-grid-lines--horizontal" aria-hidden="true">${chartYGuidesSvg}</g>
-                  <polyline fill="none" stroke="#3b82f6" stroke-width="0.125rem" points="${chartPoints}" stroke-linejoin="miter" stroke-linecap="square" vector-effect="non-scaling-stroke"/>
-                </svg>
               </div>
-              <div class="chart-x-axis-labels">
-                <span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>24:00</span>
-              </div>
-            </div>
-          </div>
-          <div class="chart-foot">
-            <span class="chart-foot-host">db-core-02.internal</span>
-            <button type="button" class="chart-foot-link">Manage Issues</button>
-          </div>
-
-          <div class="monitor-task-table-wrap">
-            <div class="monitor-task-table">
-              <div class="monitor-task-head">
-                <span>TIME (UTC) ↑</span>
-                <span>ROOT TASK</span>
-                <span>STATUS</span>
-                <span>SEVERITY</span>
-                <span>AFFECTED HOST</span>
-              </div>
-              <div class="monitor-task-row">
-                <span>11:02:11AM</span>
-                <div>
-                  <div class="task-name">DAILY_FINANCE_AGGREGATE</div>
-                  <div class="task-sub">0 sub tasks</div>
-                </div>
-                <span class="task-status is-on">ON</span>
-                <span class="task-severity"><span class="task-severity-dot"></span>Medium</span>
-                <a href="#/incident">web-prod-01</a>
-              </div>
-              <div class="monitor-task-row">
-                <span>11:02:11AM</span>
-                <div>
-                  <div class="task-name">INVENTORY_SYNC_TASK</div>
-                  <div class="task-sub">0 sub tasks</div>
-                </div>
-                <span class="task-status is-off">OFF</span>
-                <span class="task-severity"><span class="task-severity-dot"></span>Low</span>
-                <a href="#/incident">web-prod-01</a>
-              </div>
-            </div>
+            </section>
           </div>
         </div>
 
-        <aside>
-          <div class="issue-body issue-panel">
-            <div class="issue-panel-title">
-              ${iconIssueArrow.trim()}
-              Issue Analysis
-            </div>
-            <div class="monitor-issue-summary">
-              <h4>Harden DNS Configuration</h4>
-              <div class="sub">Immediate Host Isolation</div>
-              <p class="copy monitor-issue-copy">
-                Quarantine the compromised host at IP address 172.31.255.2 to immediately prevent any potential lateral
-                movement or external data exfiltration.
-              </p>
-            </div>
-            <div class="steps">
-              <a class="step" href="#/monitor">
-                <div class="step-inner">
-                  <div class="step-num-box">
-                    <span class="step-num">1</span>
-                  </div>
-                  <div class="step-content">
-                    <div class="step-text">
-                      <div class="step-title">Correlate with prior telemetry logs</div>
-                      <div class="step-sub">Temporarily segment this endpoint</div>
-                    </div>
-                    <div class="step-link">
-                      <svg class="step-link-icon" width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path d="M17.707 7.29163L13.5404 7.29163V9.37496L17.707 9.37496C19.4258 9.37496 20.832 10.7812 20.832 12.5C20.832 14.2187 19.4258 15.625 17.707 15.625H13.5404V17.7083H17.707C20.582 17.7083 22.9154 15.375 22.9154 12.5C22.9154 9.62496 20.582 7.29163 17.707 7.29163ZM11.457 15.625L7.29036 15.625C5.57161 15.625 4.16536 14.2187 4.16536 12.5C4.16536 10.7812 5.57161 9.37496 7.29036 9.37496L11.457 9.37496V7.29163L7.29036 7.29163C4.41536 7.29163 2.08203 9.62496 2.08203 12.5C2.08203 15.375 4.41536 17.7083 7.29036 17.7083H11.457V15.625ZM8.33203 11.4583L16.6654 11.4583V13.5416L8.33203 13.5416V11.4583Z" fill="currentColor"/>
-                      </svg>
-                      <span class="step-link-text">How to Isolate Host</span>
-                    </div>
-                  </div>
-                </div>
-                <span class="step-chev-box" aria-hidden="true">
-                  <svg class="step-chev" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M9.67578 8.645L15.0191 14L9.67578 19.355L11.3208 21L18.3208 14L11.3208 7L9.67578 8.645Z" fill="currentColor"/>
-                  </svg>
-                </span>
-              </a>
-              <a class="step" href="#/incident">
-                <div class="step-inner">
-                  <div class="step-num-box">
-                    <span class="step-num">2</span>
-                  </div>
-                  <div class="step-content">
-                    <div class="step-text">
-                      <div class="step-title">Generate anomaly summary for Case #8846</div>
-                      <div class="step-sub">Compile time-series data, node relationships, and AI-detected</div>
-                    </div>
-                  </div>
-                </div>
-                <span class="step-chev-box" aria-hidden="true">
-                  <svg class="step-chev" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M9.67578 8.645L15.0191 14L9.67578 19.355L11.3208 21L18.3208 14L11.3208 7L9.67578 8.645Z" fill="currentColor"/>
-                  </svg>
-                </span>
-              </a>
-              <button type="button" class="step" id="step-sandbox">
-                <div class="step-inner">
-                  <div class="step-num-box">
-                    <span class="step-num">3</span>
-                  </div>
-                  <div class="step-content">
-                    <div class="step-text">
-                      <div class="step-title">Initiate traffic replay sandbox</div>
-                      <div class="step-sub">Reconstruct the last 60 seconds of packet flow</div>
-                    </div>
-                  </div>
-                </div>
-                <span class="step-chev-box" aria-hidden="true">
-                  <svg class="step-chev" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M9.67578 8.645L15.0191 14L9.67578 19.355L11.3208 21L18.3208 14L11.3208 7L9.67578 8.645Z" fill="currentColor"/>
-                  </svg>
-                </span>
-              </button>
-            </div>
-          </div>
-        </aside>
+        ${renderMonitorIssueAnalysisHtml()}
       </div>
     </section>
   `;
@@ -486,10 +533,16 @@ export function attachMonitorHandlers(root) {
     });
   }
 
-  const sb = root.querySelector('#step-sandbox');
-  if (sb) {
-    sb.addEventListener('click', () => {
+  const sandboxStep = root.querySelector('#step-sandbox');
+  if (sandboxStep) {
+    sandboxStep.addEventListener('click', () => {
       window.location.hash = '#/incident';
+    });
+    sandboxStep.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.location.hash = '#/incident';
+      }
     });
   }
 

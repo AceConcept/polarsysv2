@@ -1,5 +1,6 @@
 import { shell } from '../layout.js';
 import { btnIconMarkup } from '../btnIcon.js';
+import { grantMonitorEntry } from '../monitorNav.js';
 import iconDropdownArrow from '../icons/incident-page/dropdown-arrow.svg?raw';
 import iconFilter from '../icons/SearchBarRow/filter-icon.svg?raw';
 import tapeRingUrl from '../icons/incident-page/circle_v2.png?url';
@@ -29,9 +30,6 @@ const GRAPH_CENTER_GLOW_R_REM = (18 * GRAPH_NODE_SCALE) / 16;
 const GRAPH_SATELLITE_LABEL_GAP_VB = 7 * GRAPH_NODE_SCALE;
 /** Edge marker stroke width (rem @ 16px root). */
 const GRAPH_EDGE_MARKER_STROKE_REM = (2 * GRAPH_NODE_SCALE) / 16;
-/** Vertical nudge for node popover below circle center (~20px @ 16px root, scales with document rem). */
-const INCIDENT_NODE_POPOVER_DOWN_REM = 20 / 16;
-
 /** Design-time SVG layout units (viewBox space) — positions only, not CSS px. */
 const GRAPH_VIEWBOX_W = 1600;
 const GRAPH_VIEWBOX_H = 640;
@@ -54,6 +52,9 @@ const DB_CORE_RED_CIRCUMFERENCE_SCALE = 0.62;
 const DB_CORE_TAPE_IMAGE_NUDGE_X = '0';
 const DB_CORE_TAPE_IMAGE_NUDGE_Y = '0';
 
+/** Only this host gets the expandable issues panel (extension card). */
+const INCIDENT_NODE_POPOVER_EXTENDABLE_HOST = 'db-core-02.internal';
+
 /** Popover body + urgency per graph node (hostname keys match SVG labels). */
 const INCIDENT_GRAPH_NODE_POPOVER = {
   'db-core-02.internal': {
@@ -62,6 +63,13 @@ const INCIDENT_GRAPH_NODE_POPOVER = {
     body:
       'Quarantine the compromised host at IP address 172.31.255.2 to immediately prevent any potential lateral movement or external data exfiltration.',
     recommendation: 'highly',
+    issues: [
+      { count: '125', label: 'All Issues', severity: 'critical' },
+      { count: '20', label: 'Unauthorized Port Scans', severity: 'critical' },
+      { count: '20', label: 'Recursive DNS Loop', severity: 'standard' },
+      { count: '05', label: 'Failed Logins', severity: 'standard' },
+      { count: '33', label: 'External IP Correlation', severity: 'standard' },
+    ],
   },
   'web-prod-01': {
     tier: 'elevated',
@@ -107,6 +115,33 @@ const INCIDENT_GRAPH_NODE_POPOVER = {
   },
 };
 
+function nodePopoverIsExtendable(nodeKey, detail) {
+  return nodeKey === INCIDENT_NODE_POPOVER_EXTENDABLE_HOST && Boolean(detail.issues?.length);
+}
+
+function renderIncidentNodePopoverIssuesHtml(issues) {
+  if (!issues?.length) return '';
+  const rows = issues
+    .map(
+      ({ count, label, severity }) => `
+          <li class="incident-node-popover__issues-item">
+            <button type="button" class="incident-node-popover__issue-row">
+              <span class="incident-node-popover__issue-dot incident-node-popover__issue-dot--${severity}" aria-hidden="true"></span>
+              <span class="incident-node-popover__issue-count">${count}</span>
+              <span class="incident-node-popover__issue-label">${label}</span>
+            </button>
+          </li>`,
+    )
+    .join('');
+
+  return `
+        <div class="incident-node-popover__issues">
+          <ul class="incident-node-popover__issues-list">
+            ${rows}
+          </ul>
+        </div>`;
+}
+
 const NODE_GUIDE_NODES = [
   { host: 'db-core-02.internal', dot: '#ef4444' },
   { host: 'external-node-a', dot: '#ef4444' },
@@ -121,7 +156,12 @@ function renderNodeGuidePanelHtml() {
   const rows = NODE_GUIDE_NODES.map(
     ({ host, dot }) => `
           <li class="node-guide-panel__item">
-            <button type="button" class="node-guide-row" role="menuitem">
+            <button
+              type="button"
+              class="node-guide-row"
+              role="menuitem"
+              data-incident-node="${host}"
+            >
               <span class="node-guide-row__dot" style="background-color: ${dot}" aria-hidden="true"></span>
               <span class="node-guide-row__host">${host}</span>
             </button>
@@ -156,12 +196,12 @@ export function renderIncident() {
                 </h1>
               </div>
               <div class="incident-header-tags">
-                <span class="btn btn-dark incident-status-btn">${btnIconMarkup()}<span>High Risk</span></span>
-                <span class="btn btn-dark incident-status-btn">${btnIconMarkup()}<span>Under Analysis</span></span>
+                <span class="btn btn-dark incident-status-btn">High Risk</span>
+                <span class="btn btn-dark incident-status-btn">Under Analysis</span>
               </div>
             </div>
             <div class="incident-telemetry-wrap">
-              <a class="btn btn-dark incident-status-btn" href="#/monitor">${btnIconMarkup()}<span>View Host Telemetry</span></a>
+              <button type="button" class="btn btn-dark incident-status-btn">${btnIconMarkup()}<span>View Host Telemetry</span></button>
             </div>
           </div>
           <p class="desc incident-desc">
@@ -186,11 +226,11 @@ export function renderIncident() {
         <div class="graph-canvas">
           <div class="graph-widget-head">
             <div class="graph-widget-head__icons">
-              <button type="button" class="icon-btn" aria-label="Filter graph">
-                <span class="icon-btn__svg" aria-hidden="true">${iconFilter.trim()}</span>
-              </button>
               <button type="button" class="icon-btn" aria-label="Expand">
                 <svg class="icon-btn__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+              </button>
+              <button type="button" class="icon-btn" aria-label="Filter graph">
+                <span class="icon-btn__svg" aria-hidden="true">${iconFilter.trim()}</span>
               </button>
             </div>
             <div class="graph-widget-head__center">
@@ -235,9 +275,10 @@ export function renderIncident() {
             </div>
           </div>
           <div
-            class="graph-map-viewport graph-map-viewport--static"
-            role="region"
-            aria-label="Incident network graph"
+            class="graph-map-viewport"
+            tabindex="0"
+            role="application"
+            aria-label="Incident network graph: drag to pan"
           >
             <div class="graph-map-stage">
               <div class="graph-map-infinite-bg" aria-hidden="true"></div>
@@ -324,7 +365,12 @@ export function renderIncident() {
             <g transform="translate(-${GRAPH_LABEL_OFFSET_X_REM}rem 0)">
               <foreignObject x="0" y="2.8125rem" width="${GRAPH_FOREIGN_OBJECT_W_REM}rem" height="${GRAPH_FOREIGN_OBJECT_H_REM}rem" overflow="visible">
                 <div xmlns="http://www.w3.org/1999/xhtml" class="incident-db-core-label-html">
-                  <span class="incident-db-core-pill">db-core-02.internal</span>
+                  <span class="incident-db-core-pill">
+                    <svg class="incident-db-core-pill__warn" xmlns="http://www.w3.org/2000/svg" width="1.375rem" height="1.375rem" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M12 8v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="incident-db-core-pill__host">db-core-02.internal</span>
+                  </span>
                 </div>
               </foreignObject>
             </g>
@@ -332,6 +378,7 @@ export function renderIncident() {
             </g>
           </svg>
               </div>
+            </div>
               <div
                 id="incident-node-popover"
                 class="incident-node-popover"
@@ -340,9 +387,15 @@ export function renderIncident() {
                 aria-modal="true"
                 aria-labelledby="incident-node-popover-title"
               >
-                <button type="button" class="incident-node-popover__dismiss" aria-label="Close node details">${iconDropdownArrow.trim()}</button>
+                <div class="incident-node-popover__cap" aria-hidden="true"></div>
                 <div class="incident-node-popover__surface">
-                  <div class="incident-node-popover__accent" aria-hidden="true"></div>
+                  <button
+                    type="button"
+                    class="incident-node-popover__toggle"
+                    aria-label="Toggle issue details"
+                    aria-expanded="false"
+                    hidden
+                  >${iconDropdownArrow.trim()}</button>
                   <div class="incident-node-popover__row">
                     <div class="incident-node-popover__icon-wrap" aria-hidden="true">
                       <span class="incident-node-popover__icon-outer"></span>
@@ -353,14 +406,14 @@ export function renderIncident() {
                       <h2 id="incident-node-popover-title" class="incident-node-popover__title"></h2>
                       <p class="incident-node-popover__body"></p>
                       <div class="incident-node-popover__footer">
-                        <a class="btn btn-dark incident-node-popover__cta" href="#/monitor">${btnIconMarkup()}<span>View Host Telemetry</span></a>
+                        <button type="button" class="btn btn-dark incident-node-popover__cta">View Host Telemetry</button>
                         <span class="incident-node-popover__rec incident-node-popover__rec--hidden">* Highly Recommended</span>
                       </div>
                     </div>
                   </div>
+                  <div class="incident-node-popover__issues-host"></div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </div>
@@ -377,47 +430,70 @@ export function renderIncident() {
   });
 }
 
-function getIncidentPopoverAnchor(hitGroupEl) {
+function getIncidentPopoverAnchorCircle(hitGroupEl) {
   const directCircles = hitGroupEl.querySelectorAll(':scope > circle');
   if (directCircles.length >= 2) {
     const grad = [...directCircles].find((c) => (c.getAttribute('fill') ?? '').startsWith('url('));
     if (grad) return grad;
     return directCircles[1];
   }
-  return hitGroupEl.querySelector(':scope > circle') ?? hitGroupEl;
+  return hitGroupEl.querySelector(':scope > circle');
 }
 
-function positionIncidentGraphPopover(popover, viewportEl, anchorEl) {
+/** Screen-space rect for the node disc (SVG circles with rem radii can report 0×0 from getBBox). */
+function getIncidentPopoverAnchorRect(hitGroupEl) {
+  const circle = getIncidentPopoverAnchorCircle(hitGroupEl);
+  if (circle instanceof SVGCircleElement) {
+    const ar = circle.getBoundingClientRect();
+    if (ar.width > 0 && ar.height > 0) return ar;
+
+    const svg = circle.ownerSVGElement;
+    const ctm = circle.getScreenCTM();
+    if (svg && ctm) {
+      const pt = svg.createSVGPoint();
+      pt.x = circle.cx.baseVal.value;
+      pt.y = circle.cy.baseVal.value;
+      const center = pt.matrixTransform(ctm);
+      const edge = svg.createSVGPoint();
+      edge.x = pt.x + circle.r.baseVal.value;
+      edge.y = pt.y;
+      const edgePt = edge.matrixTransform(ctm);
+      const r = Math.hypot(edgePt.x - center.x, edgePt.y - center.y) || 12;
+      return new DOMRect(center.x - r, center.y - r, r * 2, r * 2);
+    }
+  }
+
+  const fallback = circle ?? hitGroupEl;
+  return fallback.getBoundingClientRect();
+}
+
+function positionIncidentGraphPopover(popover, viewportEl, hitGroupEl) {
   const vp = viewportEl.getBoundingClientRect();
-  const ar = anchorEl.getBoundingClientRect();
+  const ar = getIncidentPopoverAnchorRect(hitGroupEl);
   const gapRem = parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.625;
   const margin = gapRem;
 
-  popover.hidden = false;
   popover.style.visibility = 'hidden';
-  popover.style.transform = '';
-  popover.style.left = '0';
+  popover.style.left = '-10000px';
   popover.style.top = '0';
 
   const popH = popover.offsetHeight;
   const popW = popover.offsetWidth;
-  popover.style.visibility = '';
 
-  /** Popover left edge flush with anchor circle left (popover extends east; clamp stays on-screen). */
-  let left = ar.left - vp.left;
+  /** Top-left corner of the popover sits on the anchor node center (card extends down and right). */
+  const nodeCenterX = ar.left + ar.width / 2 - vp.left;
+  const nodeCenterY = ar.top + ar.height / 2 - vp.top;
+
+  let left = nodeCenterX;
   left = Math.max(margin, Math.min(left, vp.width - margin - popW));
 
-  const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  const downPx = rootPx * INCIDENT_NODE_POPOVER_DOWN_REM;
-
-  /** Vertical center on the anchor circle, shifted down by ~20px in rem. */
-  const centerLine = ar.top + ar.height / 2 - vp.top;
-  let top = centerLine + downPx;
-  top = Math.max(margin + popH / 2, Math.min(top, vp.height - margin - popH / 2));
+  let top = nodeCenterY;
+  top = Math.max(margin, Math.min(top, vp.height - margin - popH));
 
   popover.style.left = `${left}px`;
   popover.style.top = `${top}px`;
-  popover.style.transform = 'translateY(-50%)';
+  popover.style.transform = '';
+  popover.style.visibility = '';
 }
 
 function attachIncidentGraphNodePopover(viewport) {
@@ -428,8 +504,11 @@ function attachIncidentGraphNodePopover(viewport) {
   const titleEl = popover.querySelector('.incident-node-popover__title');
   const bodyEl = popover.querySelector('.incident-node-popover__body');
   const recEl = popover.querySelector('.incident-node-popover__rec');
-  const dismissEl = popover.querySelector('.incident-node-popover__dismiss');
+  const toggleEl = popover.querySelector('.incident-node-popover__toggle');
+  const issuesHost = popover.querySelector('.incident-node-popover__issues-host');
   if (!(titleEl instanceof HTMLElement) || !(bodyEl instanceof HTMLElement)) return;
+
+  popover.hidden = true;
 
   let openNodeKey = '';
   /** @type {SVGGElement | null} */
@@ -439,31 +518,81 @@ function attachIncidentGraphNodePopover(viewport) {
     openNodeKey = '';
     lastHitGroup = null;
     popover.hidden = true;
+    popover.classList.remove('is-issues-expanded', 'incident-node-popover--extendable');
+    popover.style.left = '';
+    popover.style.top = '';
+    popover.style.transform = '';
+    popover.style.visibility = '';
+    if (issuesHost instanceof HTMLElement) issuesHost.innerHTML = '';
+    if (toggleEl instanceof HTMLButtonElement) {
+      toggleEl.hidden = true;
+      toggleEl.setAttribute('aria-expanded', 'false');
+    }
   }
 
   function reflowPosition() {
     if (popover.hidden || !lastHitGroup) return;
-    const anchor = getIncidentPopoverAnchor(lastHitGroup);
-    positionIncidentGraphPopover(popover, viewport, anchor);
+    positionIncidentGraphPopover(popover, viewport, lastHitGroup);
+  }
+
+  function canOpenMonitorFromPopover() {
+    return openNodeKey === INCIDENT_NODE_POPOVER_EXTENDABLE_HOST;
+  }
+
+  function goToMonitorFromPopover() {
+    if (!canOpenMonitorFromPopover()) return;
+    grantMonitorEntry();
+    window.location.hash = '#/monitor';
+  }
+
+  function renderPopoverTitle(nodeKey) {
+    if (nodeKey === INCIDENT_NODE_POPOVER_EXTENDABLE_HOST) {
+      titleEl.innerHTML = `<a href="#/monitor" class="incident-node-popover__title-link">${nodeKey}</a>`;
+      return;
+    }
+    titleEl.textContent = nodeKey;
   }
 
   function open(hitGroup, nodeKey, detail) {
     openNodeKey = nodeKey;
     lastHitGroup = hitGroup;
-    titleEl.textContent = nodeKey;
+    renderPopoverTitle(nodeKey);
     bodyEl.textContent = detail.body;
     popover.classList.toggle('incident-node-popover--critical', detail.tier === 'critical');
     popover.style.setProperty('--popover-node-core', detail.coreColor);
     recEl?.classList.toggle('incident-node-popover__rec--hidden', detail.recommendation !== 'highly');
 
-    positionIncidentGraphPopover(popover, viewport, getIncidentPopoverAnchor(hitGroup));
+    const canExtend = nodePopoverIsExtendable(nodeKey, detail);
+    popover.classList.toggle('incident-node-popover--extendable', canExtend);
+    if (issuesHost instanceof HTMLElement) {
+      issuesHost.innerHTML = canExtend ? renderIncidentNodePopoverIssuesHtml(detail.issues) : '';
+    }
+    popover.classList.remove('is-issues-expanded');
+    if (toggleEl instanceof HTMLButtonElement) {
+      toggleEl.hidden = !canExtend;
+      toggleEl.setAttribute('aria-expanded', 'false');
+    }
+
+    popover.hidden = false;
+    positionIncidentGraphPopover(popover, viewport, hitGroup);
     requestAnimationFrame(() => reflowPosition());
   }
 
+  popover.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const isMonitorTrigger =
+      target.closest('.incident-node-popover__title-link') ||
+      target.closest('.incident-node-popover__cta');
+    if (!isMonitorTrigger) return;
+    e.preventDefault();
+    e.stopPropagation();
+    goToMonitorFromPopover();
+  });
+
   svg.addEventListener('click', (e) => {
     const el = e.target instanceof Element ? e.target : null;
-    if (!el?.closest('[data-incident-node]')) return;
-    const hit = el.closest('[data-incident-node]');
+    const hit = el?.closest('[data-incident-node]');
     if (!(hit instanceof SVGGElement) || hit.closest('.graph-svg') !== svg) return;
     const nodeKey = hit.getAttribute('data-incident-node');
     if (!nodeKey) return;
@@ -471,16 +600,32 @@ function attachIncidentGraphNodePopover(viewport) {
     if (!detail) return;
     e.stopPropagation();
     if (openNodeKey === nodeKey && !popover.hidden) {
+      if (
+        nodePopoverIsExtendable(nodeKey, detail) &&
+        !popover.classList.contains('is-issues-expanded')
+      ) {
+        popover.classList.add('is-issues-expanded');
+        if (toggleEl instanceof HTMLButtonElement) {
+          toggleEl.setAttribute('aria-expanded', 'true');
+        }
+        requestAnimationFrame(() => reflowPosition());
+        return;
+      }
       close();
       return;
     }
     open(hit, nodeKey, detail);
   });
 
-  dismissEl?.addEventListener('click', (ev) => {
+  toggleEl?.addEventListener('click', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
-    close();
+    if (!popover.classList.contains('incident-node-popover--extendable')) return;
+    const expanded = popover.classList.toggle('is-issues-expanded');
+    if (toggleEl instanceof HTMLButtonElement) {
+      toggleEl.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+    requestAnimationFrame(() => reflowPosition());
   });
 
   document.addEventListener(
@@ -501,6 +646,35 @@ function attachIncidentGraphNodePopover(viewport) {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !popover.hidden) close();
   });
+
+  /** Open/toggle popover for a node from non-SVG UI (node guide dropdown). */
+  function openByNodeKey(nodeKey) {
+    const detail = INCIDENT_GRAPH_NODE_POPOVER[nodeKey];
+    if (!detail) return;
+
+    const safeKey = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(nodeKey) : nodeKey;
+    const hit = svg.querySelector(`[data-incident-node="${safeKey}"]`);
+    if (!(hit instanceof SVGGElement)) return;
+
+    if (openNodeKey === nodeKey && !popover.hidden) {
+      if (
+        nodePopoverIsExtendable(nodeKey, detail) &&
+        !popover.classList.contains('is-issues-expanded')
+      ) {
+        popover.classList.add('is-issues-expanded');
+        if (toggleEl instanceof HTMLButtonElement) {
+          toggleEl.setAttribute('aria-expanded', 'true');
+        }
+        requestAnimationFrame(() => reflowPosition());
+        return;
+      }
+      close();
+      return;
+    }
+    open(hit, nodeKey, detail);
+  }
+
+  return { openByNodeKey, reflowPosition };
 }
 
 function attachGraphDropdown(wrap, { onSelect } = {}) {
@@ -557,7 +731,7 @@ function attachGraphDropdown(wrap, { onSelect } = {}) {
 }
 
 /** Node guide: opens a node list panel; picks do not change the trigger label. */
-function attachNodeGuidePanel(wrap) {
+function attachNodeGuidePanel(wrap, { onPickNodeKey } = {}) {
   if (!wrap) return;
   const btn = wrap.querySelector('.graph-dropdown--node-guide');
   const panel = wrap.querySelector('.node-guide-panel');
@@ -584,7 +758,10 @@ function attachNodeGuidePanel(wrap) {
   panel.addEventListener('click', (e) => {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
-    if (!target.closest('.node-guide-row')) return;
+    const rowBtn = target.closest('.node-guide-row');
+    if (!rowBtn) return;
+    const nodeKey = rowBtn.getAttribute('data-incident-node');
+    if (nodeKey) onPickNodeKey?.(nodeKey);
     close();
   });
 
@@ -600,15 +777,22 @@ function attachNodeGuidePanel(wrap) {
   });
 }
 
-/** Pan/zoom is off — keep viewport static and block wheel/gesture scaling on the map. */
-function disableGraphViewportPanZoom(viewport, stage) {
-  viewport.classList.add('graph-map-viewport--static');
-  viewport.classList.remove('is-active', 'is-panning');
-  viewport.removeAttribute('tabindex');
+/** Drag to pan the map; wheel / pinch zoom stays disabled. */
+function enableGraphViewportPan(viewport, stage, { onPan } = {}) {
+  if (!stage) return;
 
-  if (stage) {
-    stage.style.transform = 'none';
-  }
+  viewport.classList.remove('graph-map-viewport--static');
+  viewport.classList.add('is-active');
+
+  let panX = 0;
+  let panY = 0;
+  /** @type {{ pointerId: number; x: number; y: number; originX: number; originY: number } | null} */
+  let drag = null;
+
+  const applyTransform = () => {
+    stage.style.transform = `translate(${panX}px, ${panY}px)`;
+    onPan?.();
+  };
 
   const blockZoom = (e) => {
     e.preventDefault();
@@ -618,6 +802,48 @@ function disableGraphViewportPanZoom(viewport, stage) {
   viewport.addEventListener('gesturestart', blockZoom);
   viewport.addEventListener('gesturechange', blockZoom);
   viewport.addEventListener('gestureend', blockZoom);
+
+  const canStartPan = (target) => {
+    if (!(target instanceof Element)) return false;
+    if (target.closest('#incident-node-popover')) return false;
+    if (target.closest('[data-incident-node]')) return false;
+    if (target.closest('button, a, input, select, textarea')) return false;
+    return true;
+  };
+
+  viewport.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || !canStartPan(e.target)) return;
+    drag = {
+      pointerId: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      originX: panX,
+      originY: panY,
+    };
+    viewport.setPointerCapture(e.pointerId);
+    viewport.classList.add('is-panning');
+  });
+
+  const endDrag = (e) => {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    drag = null;
+    viewport.classList.remove('is-panning');
+    try {
+      viewport.releasePointerCapture(e.pointerId);
+    } catch {
+      /* capture already released */
+    }
+  };
+
+  viewport.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    panX = drag.originX + (e.clientX - drag.x);
+    panY = drag.originY + (e.clientY - drag.y);
+    applyTransform();
+  });
+
+  viewport.addEventListener('pointerup', endDrag);
+  viewport.addEventListener('pointercancel', endDrag);
 }
 
 export function attachIncidentHandlers(root = document) {
@@ -626,7 +852,9 @@ export function attachIncidentHandlers(root = document) {
   const stage = root.querySelector('.graph-map-stage');
   if (!widget || !viewport) return;
 
-  disableGraphViewportPanZoom(viewport, stage);
+  const nodeGuideWrap = root.querySelector('.graph-dropdown-wrap--node-guide');
+  const pop = attachIncidentGraphNodePopover(viewport);
+  enableGraphViewportPan(viewport, stage, { onPan: () => pop?.reflowPosition?.() });
 
   const incidentWrap = root.querySelector(
     '.graph-widget-head .graph-dropdown-wrap:not(.graph-dropdown-wrap--node-guide)',
@@ -641,6 +869,7 @@ export function attachIncidentHandlers(root = document) {
     },
   });
 
-  attachNodeGuidePanel(root.querySelector('.graph-dropdown-wrap--node-guide'));
-  attachIncidentGraphNodePopover(viewport);
+  attachNodeGuidePanel(nodeGuideWrap, {
+    onPickNodeKey: pop?.openByNodeKey,
+  });
 }

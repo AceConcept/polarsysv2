@@ -14,8 +14,8 @@ const GRAPH_NODE_SCALE = 1;
 /** Fixed layout scale inside the SVG viewBox (not interactive zoom). */
 const GRAPH_LAYOUT_SCALE = 1;
 
-/** Label size (rem) for satellite hostnames — scales with document root rem. */
-const GRAPH_SATELLITE_LABEL_REM = 1.4;
+/** Label size (rem) for satellite hostnames (16px @ 16px root). */
+const GRAPH_SATELLITE_LABEL_REM = 1;
 
 /** Square side (rem) for the rotating ring image; red node is sized from this. */
 const DB_CORE_TAPE_BOX_REM = 4 * GRAPH_NODE_SCALE;

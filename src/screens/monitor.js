@@ -62,6 +62,13 @@ function renderMonitorIssueAnalysisHtml() {
           ${MONITOR_ISSUE_MENU_ICON}
           <h2 class="issue-analysis-panel__title">Issue Analysis</h2>
         </header>
+        <div class="issue-analysis-panel__summary">
+          <h3 class="issue-analysis-panel__summary-title">Immediate Host Isolation</h3>
+          <p class="issue-analysis-panel__summary-copy">
+            Quarantine the compromised host at IP address 172.31.255.2 to immediately prevent any
+            potential lateral movement or external data exfiltration.
+          </p>
+        </div>
         <ol class="issue-analysis-panel__steps">
           ${stepsHtml}
         </ol>
@@ -253,7 +260,7 @@ export function renderMonitor() {
                     </h1>
                   </div>
                   <div class="monitor-header-tags">
-                    <span class="btn btn-dark incident-status-btn">Database Server</span>
+                    <button type="button" class="btn btn-dark incident-status-btn">Database Server</button>
                   </div>
                 </div>
               </div>
@@ -444,7 +451,7 @@ export function renderMonitor() {
   return shell({
     crumb: {
       mode: 'incidentSubpage',
-      caseTitle: '#8846 — DNS Loop & Port Scan Correlation',
+      caseTitle: 'Anomaly Detection - #8846',
       pageTitle: 'Server Telemetry',
     },
     content,

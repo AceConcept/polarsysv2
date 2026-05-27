@@ -2291,6 +2291,32 @@ a.crumb-segment--link:hover {
   color: #d4d4d8;
 }
 
+.monitor-page .issue-analysis-panel__summary {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1.5rem;
+  border-bottom: var(--monitor-issue-border);
+  background: #111111;
+}
+
+.monitor-page .issue-analysis-panel__summary-title {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1.5rem; /* 24px @ 16px root */
+  font-weight: 300;
+  line-height: 1.25;
+  color: #ffffff;
+}
+
+.monitor-page .issue-analysis-panel__summary-copy {
+  margin: 0.875rem 0 0;
+  font-family: var(--font);
+  font-size: 1.125rem; /* 18px @ 16px root */
+  font-weight: 300;
+  line-height: 1.45;
+  color: #c0c0c0;
+}
+
 .monitor-page .issue-analysis-panel__steps {
   list-style: none;
   margin: 0;

@@ -3127,6 +3127,11 @@ a.crumb-segment--link:hover {
 }
 
 .graph-map-viewport.is-active {
+  cursor: default;
+}
+
+/* Grab only over empty map (see is-pan-hover toggled in JS — not on nodes / popovers). */
+.graph-map-viewport.is-active.is-pan-hover {
   cursor: grab;
 }
 
@@ -3157,7 +3162,7 @@ a.crumb-segment--link:hover {
   z-index: 0;
   pointer-events: none;
   background-color: #090909;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0.0625rem, transparent 0.0625rem);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0.0625rem, transparent 0.0625rem);
   background-size: 1.5rem 1.5rem; /* 24px @ 16px root */
   background-position: 0 0;
 }
@@ -3183,8 +3188,8 @@ a.crumb-segment--link:hover {
 
 .incident-page .graph-svg line {
   stroke: #3f3f46;
-  stroke-width: 0.125rem; /* 2px @ 16px root */
-  vector-effect: non-scaling-stroke;
+  /* User units — same single scale as nodes (viewBox → SVG box). */
+  stroke-width: 2;
 }
 
 .incident-page .graph-svg .incident-graph-satellite {
@@ -3210,27 +3215,34 @@ a.crumb-segment--link:hover {
   box-sizing: border-box;
 }
 
+/* Pill + host text area: 544px design width = `34rem` @ 16px root (matches foreignObject). */
+.incident-page .graph-svg .incident-db-core-label-html {
+  max-width: 34rem;
+}
+
 .incident-page .incident-db-core-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 1.25rem 0.5rem 1rem;
+  gap: 0.625rem; /* 10px @ 16px root */
+  padding: 0.5rem 1.25rem 0.5rem 1rem; /* 8px 20px 8px 16px */
   background: #111111;
-  border-radius: 0.1875rem;
+  border-radius: 0.1875rem; /* 3px */
   color: #fff;
   font-family: var(--font);
   font-weight: 300;
-  font-size: 1.4375rem;
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .incident-page .incident-db-core-pill__warn {
   flex-shrink: 0;
+  width: 2rem; /* 32px @ 16px root */
+  height: 2rem;
   color: #ef4444;
 }
 
 .incident-page .incident-db-core-pill__host {
+  font-size: 1.3125rem; /* 21px @ 16px root */
   line-height: 1.2;
 }
 
@@ -3243,17 +3255,19 @@ a.crumb-segment--link:hover {
   z-index: 22;
   display: flex;
   flex-direction: column;
-  width: 23.9375rem; /* 383px @ 16px root — compact card */
-  min-width: 23.9375rem;
-  max-width: 23.9375rem;
+  cursor: default;
+  /* Wider cards (36rem default, 72rem when issues expanded) */
+  width: 36rem;
+  min-width: 36rem;
+  max-width: 36rem;
   box-sizing: border-box;
   pointer-events: auto;
 }
 
 .incident-page .incident-node-popover.incident-node-popover--extendable {
-  width: 47.875rem; /* 766px @ 16px root — 2× width for db-core extension */
-  min-width: 47.875rem;
-  max-width: 47.875rem;
+  width: 43.5625rem; /* 697px @ 16px root */
+  min-width: 43.5625rem;
+  max-width: 43.5625rem;
 }
 
 .incident-page .incident-node-popover:not(.incident-node-popover--extendable) .incident-node-popover__row {
@@ -3334,7 +3348,7 @@ a.crumb-segment--link:hover {
   align-items: flex-start;
   gap: 1rem;
   padding: 0;
-  padding-right: calc(1rem + 1.625rem + 1rem); /* 16px inset + 26px arrow + 16px gap */
+  padding-right: calc(1rem + 1.625rem + 1rem); /* 16px inset + 26px toggle + 16px gap when shown */
   min-height: 0;
 }
 
@@ -3409,7 +3423,7 @@ a.crumb-segment--link:hover {
 
 .incident-page .incident-node-popover__body {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 1.125rem; /* 18px @ 16px root — satellite node label size */
   font-weight: 300;
   line-height: 1.55;
   color: #fafafa;
@@ -3430,7 +3444,7 @@ a.crumb-segment--link:hover {
 }
 
 .incident-page .incident-node-popover__rec {
-  font-size: 0.875rem;
+  font-size: 1.125rem; /* 18px @ 16px root */
   font-weight: 500;
   color: #ef4444;
 }
@@ -3447,8 +3461,8 @@ a.crumb-segment--link:hover {
 .incident-page .incident-node-popover__issues {
   width: 100%;
   padding: 0;
-  padding-left: calc(3.625rem + 1rem); /* icon + row gap — align issue rows with text column */
-  padding-right: calc(1rem + 1.625rem + 1rem); /* match row — arrow inset + gap */
+  padding-left: calc(3.625rem + 1rem); /* icon + row gap — align with title column */
+  padding-right: calc(1rem + 1.625rem + 1rem); /* match row — toggle inset */
   box-sizing: border-box;
   margin-top: 0.75rem;
 }
@@ -3484,7 +3498,7 @@ a.crumb-segment--link:hover {
   background: #151515;
   color: #c9c9c9;
   font-family: var(--font);
-  font-size: 1rem;
+  font-size: 1.125rem; /* 18px @ 16px root */
   font-weight: 300;
   line-height: 1.2;
   text-align: left;

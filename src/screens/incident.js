@@ -4,40 +4,45 @@ import iconDropdownArrow from '../icons/incident-page/dropdown-arrow.svg?raw';
 import iconFilter from '../icons/SearchBarRow/filter-icon.svg?raw';
 import tapeRingUrl from '../icons/incident-page/circle_v2.png?url';
 
+const INCIDENT_WARN_ICON_SVG = `<svg class="incident-db-core-pill__warn" xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
 /**
  * Node size multiplier (satellites, edge dots, center ring).
- * Base satellite radius = 12px at scale 1 → rem via ÷16.
- * Tune this to make nodes larger/smaller without moving layout positions.
+ * All SVG lengths are viewBox user units (design px); the graph scales once via the
+ * rem-sized container + viewBox fit. Satellite label font-size uses rem (18px @ 16px root);
+ * other geometry stays in viewBox user units.
  */
 const GRAPH_NODE_SCALE = 1;
 
-/** Fixed layout scale inside the SVG viewBox (not interactive zoom). */
-const GRAPH_LAYOUT_SCALE = 1;
-
-/** Label size (rem) for satellite hostnames (16px @ 16px root). */
-const GRAPH_SATELLITE_LABEL_REM = 1;
-
-/** Square side (rem) for the rotating ring image; red node is sized from this. */
-const DB_CORE_TAPE_BOX_REM = 4 * GRAPH_NODE_SCALE;
-/** Satellite node radius (rem @ 16px root). */
-const GRAPH_SATELLITE_R_REM = (12 * GRAPH_NODE_SCALE) / 16;
-/** Edge marker radius (rem @ 16px root). */
-const GRAPH_EDGE_MARKER_R_REM = (4 * GRAPH_NODE_SCALE) / 16;
-/** Center glow halo radius (rem @ 16px root). */
-const GRAPH_CENTER_GLOW_R_REM = (18 * GRAPH_NODE_SCALE) / 16;
-/** Horizontal gap satellite circle → label (viewBox units, matches rem radii at design scale). */
+/** Satellite node radius — viewBox units (= 12px @ scale 1). */
+const GRAPH_SATELLITE_R_VB = 12 * GRAPH_NODE_SCALE;
+/** Edge marker radius — viewBox units (= 4px @ scale 1). */
+const GRAPH_EDGE_MARKER_R_VB = 4 * GRAPH_NODE_SCALE;
+/** Center glow halo radius — viewBox units (= 18px @ scale 1). */
+const GRAPH_CENTER_GLOW_R_VB = 18 * GRAPH_NODE_SCALE;
+/** Satellite hostname labels — 18px @ 16px root (use rem in SVG so type tracks root font). */
+const GRAPH_SATELLITE_LABEL_FONT_REM = 18 / 16;
+/** Horizontal gap satellite circle → label (viewBox units). */
 const GRAPH_SATELLITE_LABEL_GAP_VB = 7 * GRAPH_NODE_SCALE;
-/** Edge marker stroke width (rem @ 16px root). */
-const GRAPH_EDGE_MARKER_STROKE_REM = (2 * GRAPH_NODE_SCALE) / 16;
-/** Design-time SVG layout units (viewBox space) — positions only, not CSS px. */
+/** Edge marker stroke — viewBox units (= 2px @ scale 1). */
+const GRAPH_EDGE_MARKER_STROKE_VB = 2 * GRAPH_NODE_SCALE;
+/** Rotating ring image square side — viewBox units (= 64px / 4rem @ scale 1). */
+const DB_CORE_TAPE_BOX_VB = 64 * GRAPH_NODE_SCALE;
+/** Design-time SVG layout units (viewBox space). */
 const GRAPH_VIEWBOX_W = 1600;
 const GRAPH_VIEWBOX_H = 640;
 const GRAPH_CENTER_X = 800;
 const GRAPH_CENTER_Y = 320;
 const GRAPH_SHIFT_X = -380;
-const GRAPH_LABEL_OFFSET_X_REM = (35 * GRAPH_NODE_SCALE) / 16;
-const GRAPH_FOREIGN_OBJECT_W_REM = 30;
-const GRAPH_FOREIGN_OBJECT_H_REM = 3.5;
+/** Nudge db-core HTML label — viewBox units (= 35px @ scale 1). */
+const GRAPH_LABEL_OFFSET_X_VB = 35 * GRAPH_NODE_SCALE;
+/** Db-core pill `foreignObject` width — 544px @ 16px root (`34 × 16`). */
+const GRAPH_FOREIGN_OBJECT_W_REM = 34;
+/** Db-core pill `foreignObject` height — viewBox units (vertical room for pill row). */
+const GRAPH_FOREIGN_OBJECT_H_VB = 72 * GRAPH_NODE_SCALE;
+const GRAPH_FOREIGN_OBJECT_Y_VB = 45 * GRAPH_NODE_SCALE;
+/** Glow blur — viewBox units (= 6px @ scale 1). */
+const GRAPH_GLOW_BLUR_STD_VB = 6 * GRAPH_NODE_SCALE;
 /**
  * Red fill: circumference = this × (π × tape box side) — i.e. diameter = scale × tape box.
  * Tune to match the PNG inner opening (smaller = tighter to the ring hole).
@@ -177,12 +182,12 @@ function renderNodeGuidePanelHtml() {
 }
 
 function satelliteLabelX(cx) {
-  return cx + 12 * GRAPH_NODE_SCALE + GRAPH_SATELLITE_LABEL_GAP_VB;
+  return cx + GRAPH_SATELLITE_R_VB + GRAPH_SATELLITE_LABEL_GAP_VB;
 }
 
 export function renderIncident() {
-  const dbCoreTapeHalfRem = DB_CORE_TAPE_BOX_REM / 2;
-  const dbCoreRedRadiusRem = (DB_CORE_TAPE_BOX_REM * DB_CORE_RED_CIRCUMFERENCE_SCALE) / 2;
+  const dbCoreTapeHalfVb = DB_CORE_TAPE_BOX_VB / 2;
+  const dbCoreRedRadiusVb = (DB_CORE_TAPE_BOX_VB * DB_CORE_RED_CIRCUMFERENCE_SCALE) / 2;
   const content = `
     <section class="incident-page">
       <div class="page-head incident-header">
@@ -283,7 +288,6 @@ export function renderIncident() {
               <div class="graph-map-infinite-bg" aria-hidden="true"></div>
               <div class="graph-map-graph-layer">
           <svg class="graph-svg" viewBox="0 0 ${GRAPH_VIEWBOX_W} ${GRAPH_VIEWBOX_H}" preserveAspectRatio="xMinYMid meet">
-            <g transform="translate(${GRAPH_CENTER_X} ${GRAPH_CENTER_Y}) scale(${GRAPH_LAYOUT_SCALE}) translate(-${GRAPH_CENTER_X} -${GRAPH_CENTER_Y})">
             <g class="incident-graph-shift" transform="translate(${GRAPH_SHIFT_X} 0)">
             <defs>
               <linearGradient id="incident-db-core-gradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
@@ -291,14 +295,14 @@ export function renderIncident() {
                 <stop offset="100%" stop-color="#FF6262"/>
               </linearGradient>
               <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="0.375rem" result="blur"/>
+                <feGaussianBlur stdDeviation="${GRAPH_GLOW_BLUR_STD_VB}" result="blur"/>
                 <feMerge>
                   <feMergeNode in="blur"/>
                   <feMergeNode in="SourceGraphic"/>
                 </feMerge>
               </filter>
             </defs>
-            <!-- edges (stroke width in CSS rem) -->
+            <!-- edges (stroke in CSS user units — scales with viewBox) -->
             <line x1="${GRAPH_CENTER_X}" y1="${GRAPH_CENTER_Y}" x2="560" y2="350"/>
             <line x1="${GRAPH_CENTER_X}" y1="${GRAPH_CENTER_Y}" x2="760" y2="190"/>
             <line x1="${GRAPH_CENTER_X}" y1="${GRAPH_CENTER_Y}" x2="1040" y2="320"/>
@@ -306,41 +310,41 @@ export function renderIncident() {
             <line x1="${GRAPH_CENTER_X}" y1="${GRAPH_CENTER_Y}" x2="650" y2="520"/>
             <line x1="${GRAPH_CENTER_X}" y1="${GRAPH_CENTER_Y}" x2="1100" y2="610"/>
             <!-- edge markers -->
-            <circle cx="680" cy="335" r="${GRAPH_EDGE_MARKER_R_REM}rem" fill="#3b82f6" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_REM}rem"/>
-            <circle cx="780" cy="255" r="${GRAPH_EDGE_MARKER_R_REM}rem" fill="#b3c66a" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_REM}rem"/>
-            <circle cx="920" cy="320" r="${GRAPH_EDGE_MARKER_R_REM}rem" fill="#b3c66a" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_REM}rem"/>
-            <circle cx="890" cy="205" r="${GRAPH_EDGE_MARKER_R_REM}rem" fill="#9ca3af" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_REM}rem"/>
-            <circle cx="725" cy="420" r="${GRAPH_EDGE_MARKER_R_REM}rem" fill="#3b82f6" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_REM}rem"/>
-            <circle cx="950" cy="465" r="${GRAPH_EDGE_MARKER_R_REM}rem" fill="#9ca3af" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_REM}rem"/>
+            <circle cx="680" cy="335" r="${GRAPH_EDGE_MARKER_R_VB}" fill="#3b82f6" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_VB}"/>
+            <circle cx="780" cy="255" r="${GRAPH_EDGE_MARKER_R_VB}" fill="#b3c66a" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_VB}"/>
+            <circle cx="920" cy="320" r="${GRAPH_EDGE_MARKER_R_VB}" fill="#b3c66a" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_VB}"/>
+            <circle cx="890" cy="205" r="${GRAPH_EDGE_MARKER_R_VB}" fill="#9ca3af" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_VB}"/>
+            <circle cx="725" cy="420" r="${GRAPH_EDGE_MARKER_R_VB}" fill="#3b82f6" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_VB}"/>
+            <circle cx="950" cy="465" r="${GRAPH_EDGE_MARKER_R_VB}" fill="#9ca3af" stroke="#070707" stroke-width="${GRAPH_EDGE_MARKER_STROKE_VB}"/>
             <!-- satellite nodes (click opens detail popover) -->
             <g class="incident-graph-satellite" data-incident-node="web-prod-01" role="button" tabindex="-1" aria-label="Host web-prod-01">
-              <circle cx="760" cy="190" r="${GRAPH_SATELLITE_R_REM}rem" fill="#f97316"/>
-              <text x="${satelliteLabelX(760)}" y="190" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_REM}rem">web-prod-01</text>
+              <circle cx="760" cy="190" r="${GRAPH_SATELLITE_R_VB}" fill="#f97316"/>
+              <text x="${satelliteLabelX(760)}" y="190" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_FONT_REM}rem">web-prod-01</text>
             </g>
             <g class="incident-graph-satellite" data-incident-node="auth-svc-01" role="button" tabindex="-1" aria-label="Host auth-svc-01">
-              <circle cx="560" cy="350" r="${GRAPH_SATELLITE_R_REM}rem" fill="#3b82f6"/>
-              <text x="${satelliteLabelX(560)}" y="350" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_REM}rem">auth-svc-01</text>
+              <circle cx="560" cy="350" r="${GRAPH_SATELLITE_R_VB}" fill="#3b82f6"/>
+              <text x="${satelliteLabelX(560)}" y="350" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_FONT_REM}rem">auth-svc-01</text>
             </g>
             <g class="incident-graph-satellite" data-incident-node="logging-collector" role="button" tabindex="-1" aria-label="Host logging-collector">
-              <circle cx="650" cy="520" r="${GRAPH_SATELLITE_R_REM}rem" fill="#3b82f6"/>
-              <text x="${satelliteLabelX(650)}" y="520" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_REM}rem">logging-collector</text>
+              <circle cx="650" cy="520" r="${GRAPH_SATELLITE_R_VB}" fill="#3b82f6"/>
+              <text x="${satelliteLabelX(650)}" y="520" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_FONT_REM}rem">logging-collector</text>
             </g>
             <g class="incident-graph-satellite" data-incident-node="api-core-07" role="button" tabindex="-1" aria-label="Host api-core-07">
-              <circle cx="1040" cy="320" r="${GRAPH_SATELLITE_R_REM}rem" fill="#b3c66a"/>
-              <text x="${satelliteLabelX(1040)}" y="320" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_REM}rem">api-core-07</text>
+              <circle cx="1040" cy="320" r="${GRAPH_SATELLITE_R_VB}" fill="#b3c66a"/>
+              <text x="${satelliteLabelX(1040)}" y="320" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_FONT_REM}rem">api-core-07</text>
             </g>
             <g class="incident-graph-satellite" data-incident-node="external-node-a" role="button" tabindex="-1" aria-label="Host external-node-a">
-              <circle cx="980" cy="90" r="${GRAPH_SATELLITE_R_REM}rem" fill="#9ca3af"/>
-              <text x="${satelliteLabelX(980)}" y="90" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_REM}rem">external-node-a</text>
+              <circle cx="980" cy="90" r="${GRAPH_SATELLITE_R_VB}" fill="#9ca3af"/>
+              <text x="${satelliteLabelX(980)}" y="90" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_FONT_REM}rem">external-node-a</text>
             </g>
             <g class="incident-graph-satellite" data-incident-node="external-node-b" role="button" tabindex="-1" aria-label="Host external-node-b">
-              <circle cx="1100" cy="610" r="${GRAPH_SATELLITE_R_REM}rem" fill="#9ca3af"/>
-              <text x="${satelliteLabelX(1100)}" y="610" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_REM}rem">external-node-b</text>
+              <circle cx="1100" cy="610" r="${GRAPH_SATELLITE_R_VB}" fill="#9ca3af"/>
+              <text x="${satelliteLabelX(1100)}" y="610" text-anchor="start" dominant-baseline="middle" fill="#fff" font-weight="300" font-family="Inter, sans-serif" font-size="${GRAPH_SATELLITE_LABEL_FONT_REM}rem">external-node-b</text>
             </g>
             <!-- center: origin at db-core node -->
             <g class="incident-graph-db-core-hit" transform="translate(${GRAPH_CENTER_X} ${GRAPH_CENTER_Y})" data-incident-node="db-core-02.internal" role="button" tabindex="-1" aria-label="Host db-core-02.internal">
-            <circle cx="0" cy="0" r="${GRAPH_CENTER_GLOW_R_REM}rem" fill="#030303" opacity="1" filter="url(#glow)"/>
-            <circle cx="0" cy="0" r="${dbCoreRedRadiusRem}rem" fill="url(#incident-db-core-gradient)"/>
+            <circle cx="0" cy="0" r="${GRAPH_CENTER_GLOW_R_VB}" fill="#030303" opacity="1" filter="url(#glow)"/>
+            <circle cx="0" cy="0" r="${dbCoreRedRadiusVb}" fill="url(#incident-db-core-gradient)"/>
             <g class="incident-db-core-tape-ring" aria-hidden="true">
               <animateTransform
                 attributeName="transform"
@@ -353,21 +357,19 @@ export function renderIncident() {
               />
               <image
                 href="${tapeRingUrl}"
-                x="-${dbCoreTapeHalfRem}rem"
-                y="-${dbCoreTapeHalfRem}rem"
-                width="${DB_CORE_TAPE_BOX_REM}rem"
-                height="${DB_CORE_TAPE_BOX_REM}rem"
+                x="-${dbCoreTapeHalfVb}"
+                y="-${dbCoreTapeHalfVb}"
+                width="${DB_CORE_TAPE_BOX_VB}"
+                height="${DB_CORE_TAPE_BOX_VB}"
                 transform="translate(${DB_CORE_TAPE_IMAGE_NUDGE_X} ${DB_CORE_TAPE_IMAGE_NUDGE_Y})"
                 preserveAspectRatio="xMidYMid meet"
               />
             </g>
-            <g transform="translate(-${GRAPH_LABEL_OFFSET_X_REM}rem 0)">
-              <foreignObject x="0" y="2.8125rem" width="${GRAPH_FOREIGN_OBJECT_W_REM}rem" height="${GRAPH_FOREIGN_OBJECT_H_REM}rem" overflow="visible">
+            <g transform="translate(-${GRAPH_LABEL_OFFSET_X_VB} 0)">
+              <foreignObject x="0" y="${GRAPH_FOREIGN_OBJECT_Y_VB}" width="${GRAPH_FOREIGN_OBJECT_W_REM}rem" height="${GRAPH_FOREIGN_OBJECT_H_VB}" overflow="visible">
                 <div xmlns="http://www.w3.org/1999/xhtml" class="incident-db-core-label-html">
                   <span class="incident-db-core-pill">
-                    <svg class="incident-db-core-pill__warn" xmlns="http://www.w3.org/2000/svg" width="1.375rem" height="1.375rem" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M12 8v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                    ${INCIDENT_WARN_ICON_SVG}
                     <span class="incident-db-core-pill__host">db-core-02.internal</span>
                   </span>
                 </div>
@@ -439,7 +441,7 @@ function getIncidentPopoverAnchorCircle(hitGroupEl) {
   return hitGroupEl.querySelector(':scope > circle');
 }
 
-/** Screen-space rect for the node disc (SVG circles with rem radii can report 0×0 from getBBox). */
+/** Screen-space rect for the node disc (some browsers report 0×0 from getBBox on scaled SVG circles). */
 function getIncidentPopoverAnchorRect(hitGroupEl) {
   const circle = getIncidentPopoverAnchorCircle(hitGroupEl);
   if (circle instanceof SVGCircleElement) {
@@ -805,12 +807,26 @@ function enableGraphViewportPan(viewport, stage, { onPan } = {}) {
     if (!(target instanceof Element)) return false;
     if (target.closest('#incident-node-popover')) return false;
     if (target.closest('[data-incident-node]')) return false;
+    if (target.closest('.incident-db-core-pill, .incident-db-core-label-html')) return false;
     if (target.closest('button, a, input, select, textarea')) return false;
     return true;
   };
 
+  const updatePanCursor = (target) => {
+    viewport.classList.toggle('is-pan-hover', canStartPan(target));
+  };
+
+  viewport.addEventListener('pointermove', (e) => {
+    if (!drag) updatePanCursor(e.target);
+  });
+
+  viewport.addEventListener('pointerleave', () => {
+    viewport.classList.remove('is-pan-hover');
+  });
+
   viewport.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || !canStartPan(e.target)) return;
+    viewport.classList.remove('is-pan-hover');
     drag = {
       pointerId: e.pointerId,
       x: e.clientX,
@@ -826,6 +842,7 @@ function enableGraphViewportPan(viewport, stage, { onPan } = {}) {
     if (!drag || e.pointerId !== drag.pointerId) return;
     drag = null;
     viewport.classList.remove('is-panning');
+    updatePanCursor(e.target);
     try {
       viewport.releasePointerCapture(e.pointerId);
     } catch {
@@ -834,7 +851,8 @@ function enableGraphViewportPan(viewport, stage, { onPan } = {}) {
   };
 
   viewport.addEventListener('pointermove', (e) => {
-    if (!drag || e.pointerId !== drag.pointerId) return;
+    if (!drag) return;
+    if (e.pointerId !== drag.pointerId) return;
     panX = drag.originX + (e.clientX - drag.x);
     panY = drag.originY + (e.clientY - drag.y);
     applyTransform();

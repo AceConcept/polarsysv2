@@ -2108,7 +2108,7 @@ a.crumb-segment--link:hover {
   box-sizing: border-box;
   min-height: 3.5rem;
   height: auto;
-  padding: 0.75rem 0;
+  padding: 0.75rem 0 0.75rem 0.75rem; /* left 12px @ 16px root */
   background: #212121;
   font-size: var(--monitor-type-size);
   font-weight: 300;
@@ -2144,7 +2144,7 @@ a.crumb-segment--link:hover {
   box-sizing: border-box;
   min-height: 4.5rem;
   height: auto;
-  padding: 0.75rem 0;
+  padding: 0.75rem 0 0.75rem 0.75rem; /* left 12px @ 16px root */
   font-size: var(--monitor-type-size);
   font-weight: 300;
   align-items: center;

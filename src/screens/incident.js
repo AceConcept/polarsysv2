@@ -1,6 +1,5 @@
 import { shell } from '../layout.js';
 import { btnIconMarkup } from '../btnIcon.js';
-import { grantMonitorEntry } from '../monitorNav.js';
 import iconDropdownArrow from '../icons/incident-page/dropdown-arrow.svg?raw';
 import iconFilter from '../icons/SearchBarRow/filter-icon.svg?raw';
 import tapeRingUrl from '../icons/incident-page/circle_v2.png?url';
@@ -541,7 +540,6 @@ function attachIncidentGraphNodePopover(viewport) {
 
   function goToMonitorFromPopover() {
     if (!canOpenMonitorFromPopover()) return;
-    grantMonitorEntry();
     window.location.hash = '#/monitor';
   }
 

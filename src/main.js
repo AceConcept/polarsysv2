@@ -6,21 +6,15 @@ import { mountUtcClock, clearUtcClock } from './utc-clock.js';
 import { attachParentBridge, notifyParentRoute } from './parentBridge.js';
 import { getCanvasContainScale, getScaleViewportSize } from './canvasScale.js';
 import { applyDocumentScale, resetDocumentScale } from './applyDocumentScale.js';
-import { canNavigateToMonitor, clearMonitorEntry } from './monitorNav.js';
 
 function currentView() {
   const m = window.location.hash.match(/#\/([\w-]+)/);
   const v = m ? m[1] : 'anomaly';
-  if (v === 'monitor' && !canNavigateToMonitor()) return 'incident';
   if (v === 'monitor' || v === 'incident') return v;
   return 'anomaly';
 }
 
 function navigateToRoute(route) {
-  if (route === 'monitor' && !canNavigateToMonitor()) {
-    window.location.hash = '#/incident';
-    return;
-  }
   window.location.hash = `#/${route}`;
 }
 
@@ -31,10 +25,6 @@ function render() {
   clearUtcClock();
 
   const view = currentView();
-  if (view !== 'monitor') {
-    clearMonitorEntry();
-  }
-
   let html = '';
 
   if (view === 'monitor') {

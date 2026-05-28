@@ -206,7 +206,7 @@ export function renderIncident() {
               </div>
             </div>
             <div class="incident-telemetry-wrap">
-              <button type="button" class="btn btn-dark incident-status-btn">${btnIconMarkup()}<span>View Host Telemetry</span></button>
+              <button type="button" class="btn btn-dark incident-status-btn">${btnIconMarkup()}<span>View General Telemetry</span></button>
             </div>
           </div>
           <p class="desc incident-desc">

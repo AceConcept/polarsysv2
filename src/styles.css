@@ -897,7 +897,7 @@ a.crumb-segment--link:hover {
 }
 
 .anomaly-grid-item__threat-bar.sev-medium {
-  background: var(--accent);
+  background: #6D6D6D;
 }
 
 .anomaly-grid-card {
@@ -1193,10 +1193,10 @@ a.crumb-segment--link:hover {
 }
 
 .btn.severity.sev-medium {
-  color: #60a5fa;
+  color: #ffffff;
 }
 .btn.severity.sev-medium .severity-dot {
-  background: var(--accent);
+  background: #ffffff;
 }
 
 .monitor-layout {

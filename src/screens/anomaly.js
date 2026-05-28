@@ -83,6 +83,8 @@ function sevClass(s) {
 }
 
 function sevLabel(s) {
+  if (s === 'medium') return 'Low';
+  if (s === 'high') return 'Medium';
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 

@@ -2337,11 +2337,11 @@ a.crumb-segment--link:hover {
   border-bottom: none;
 }
 
-.monitor-page .issue-analysis-step--sandbox {
+.monitor-page .issue-analysis-step {
   cursor: pointer;
 }
 
-.monitor-page .issue-analysis-step--sandbox:hover {
+.monitor-page .issue-analysis-step:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -3249,6 +3249,12 @@ a.crumb-segment--link:hover {
 
 .incident-page .graph-svg .incident-graph-db-core-hit {
   cursor: pointer;
+}
+
+/* Remove browser default focus ring on SVG node groups (yellow pulsing square on click). */
+.incident-page .graph-svg [data-incident-node]:focus,
+.incident-page .graph-svg [data-incident-node]:focus-visible {
+  outline: none;
 }
 
 .incident-page .incident-node-popover {

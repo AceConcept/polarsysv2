@@ -12,27 +12,27 @@ const MONITOR_ISSUE_MENU_ICON = `<svg class="issue-analysis-panel__menu-icon" wi
 
 const MONITOR_ISSUE_STEPS = [
   {
-    title: 'Correlate with prior telemetry logs',
-    desc: 'Temporarily segment this endpoint',
+    title: 'Confirm the compromised host and source IP',
+    desc: 'Validate that 172.31.255.2 is the affected endpoint and lock the isolation target before containment actions start.',
     action: { label: 'How to Isolate Host', href: '#/monitor' },
   },
   {
-    title: 'Correlate with prior telemetry logs',
-    desc: 'Temporarily segment this endpoint',
+    title: 'Quarantine the host from east-west traffic',
+    desc: 'Apply emergency segmentation so this host cannot communicate with internal services while preserving SOC visibility.',
     action: { label: 'How to Isolate Host', href: '#/incident' },
   },
   {
-    title: 'Correlate with prior telemetry logs',
-    desc: 'Compile time-series data, node relationships, and AI-detected',
+    title: 'Block lateral movement paths immediately',
+    desc: 'Disable trust routes, revoke active sessions, and enforce deny rules on neighboring nodes connected to this host.',
   },
   {
-    title: 'Correlate with prior telemetry logs',
-    desc: 'Reconstruct the last 60 seconds of packet flow',
+    title: 'Stop potential external data exfiltration',
+    desc: 'Restrict outbound flows to approved destinations only and inspect suspicious egress attempts in real time.',
     sandbox: true,
   },
   {
-    title: 'Correlate with prior telemetry logs',
-    desc: 'Temporarily segment this endpoint',
+    title: 'Verify containment and monitor for relapse',
+    desc: 'Continue telemetry correlation after quarantine to confirm no new scans, DNS loops, or unauthorized outbound activity.',
   },
 ];
 

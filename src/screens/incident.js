@@ -33,7 +33,8 @@ const GRAPH_VIEWBOX_W = 1600;
 const GRAPH_VIEWBOX_H = 640;
 const GRAPH_CENTER_X = 800;
 const GRAPH_CENTER_Y = 320;
-const GRAPH_SHIFT_X = -380;
+/** Horizontal nudge of the whole graph in viewBox units (0 = hub at viewBox center). */
+const GRAPH_SHIFT_X = 0;
 /** Nudge db-core HTML label — viewBox units (= 35px @ scale 1). */
 const GRAPH_LABEL_OFFSET_X_VB = 35 * GRAPH_NODE_SCALE;
 /** Db-core pill `foreignObject` width — 544px @ 16px root (`34 × 16`). */

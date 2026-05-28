@@ -287,7 +287,7 @@ export function renderIncident() {
             <div class="graph-map-stage">
               <div class="graph-map-infinite-bg" aria-hidden="true"></div>
               <div class="graph-map-graph-layer">
-          <svg class="graph-svg" viewBox="0 0 ${GRAPH_VIEWBOX_W} ${GRAPH_VIEWBOX_H}" preserveAspectRatio="xMinYMid meet">
+          <svg class="graph-svg" viewBox="0 0 ${GRAPH_VIEWBOX_W} ${GRAPH_VIEWBOX_H}" preserveAspectRatio="xMidYMid meet">
             <g class="incident-graph-shift" transform="translate(${GRAPH_SHIFT_X} 0)">
             <defs>
               <linearGradient id="incident-db-core-gradient" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">

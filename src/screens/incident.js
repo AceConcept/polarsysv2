@@ -227,6 +227,8 @@ export function renderIncident() {
         </div>
       </div>
 
+      <div class="monitor-top-divider-wrap"><div class="monitor-top-divider" aria-hidden="true"></div></div>
+
       <div class="graph-widget">
         <div class="graph-canvas">
           <div class="graph-widget-head">

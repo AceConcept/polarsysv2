@@ -797,6 +797,69 @@ a.crumb-segment--link:hover {
   border-color: #6b6b6b;
 }
 
+/* Toolbar button icons — 22px @ 16px root (view + sort grain). */
+.view-toggles .btn-icon {
+  width: 1.375rem; /* 22px @ 16px root */
+  height: 1.375rem;
+  min-width: 1.375rem;
+  min-height: 1.375rem;
+  flex: 0 0 1.375rem;
+}
+
+.view-toggles .btn-icon svg {
+  width: 1.375rem !important;
+  height: 1.375rem !important;
+  min-width: 1.375rem;
+  min-height: 1.375rem;
+  max-width: none;
+  max-height: none;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* View toggle — View.svg inline (22px @ 16px root). */
+.view-toggles .anomaly-view-toggle.btn {
+  color: #c9c9c9;
+}
+
+.view-toggles .anomaly-view-toggle-icon svg,
+.view-toggles .anomaly-sort-icon svg {
+  width: 1.375rem !important;
+  height: 1.375rem !important;
+  min-width: 1.375rem;
+  min-height: 1.375rem;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Anomaly sort — same graph-dropdown pattern as incident page. */
+.view-toggles .graph-dropdown-wrap--anomaly-sort {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 100%;
+}
+
+/* Trigger uses .view-toggles .btn (same as view toggle); menu stays incident-style. */
+.view-toggles .graph-dropdown-wrap--anomaly-sort > .btn.graph-dropdown {
+  font-weight: 300;
+}
+
+.view-toggles .graph-dropdown-wrap--anomaly-sort .graph-dropdown-menu {
+  left: auto;
+  right: 0;
+  min-width: 10rem;
+}
+
+.view-toggles .graph-dropdown-wrap--anomaly-sort .graph-dropdown-menu-item {
+  font-size: 1.25rem; /* 20px @ 16px root */
+  font-weight: 300;
+  font-family: var(--font);
+  cursor: pointer;
+}
+
 .toggle-btn {
   width: 5.3125rem;
   height: 5.3125rem;
@@ -1033,6 +1096,18 @@ a.crumb-segment--link:hover {
   letter-spacing: 0%;
 }
 
+.db-pill .anomaly-db-icon {
+  width: 1.25rem; /* 20px @ 16px root — matches db.svg artboard */
+  height: 1.25rem;
+  flex: 0 0 1.25rem;
+}
+
+.db-pill .anomaly-db-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
+
 .anomaly-grid-card .db-pill-host {
   font-size: inherit;
   letter-spacing: 0%;
@@ -1050,7 +1125,37 @@ a.crumb-segment--link:hover {
   min-width: 0;
 }
 
+.anomaly-list-item {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.5rem; /* 8px @ 16px root — matches grid threat-bar ↔ card gap */
+  width: 100%;
+  min-width: 0;
+}
+
+.anomaly-list-item__threat-bar {
+  width: 0.25rem; /* 4px @ 16px root */
+  flex: 0 0 0.25rem;
+  align-self: stretch;
+  border-radius: 0.125rem; /* 2px @ 16px root */
+}
+
+.anomaly-list-item__threat-bar.sev-critical {
+  background: var(--danger);
+}
+
+.anomaly-list-item__threat-bar.sev-high {
+  background: #c7d846;
+}
+
+.anomaly-list-item__threat-bar.sev-medium {
+  background: #6d6d6d;
+}
+
 .anomaly-list-row {
+  flex: 1;
+  min-width: 0;
   background: #181818;
   box-shadow: inset 0 0 0 0.09375rem #2a2a2a;
   border-radius: 0.25rem;
@@ -1063,7 +1168,7 @@ a.crumb-segment--link:hover {
   position: relative;
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s;
-  height: 13.375rem; /* 214px at 16px root */
+  min-height: 13.375rem; /* 214px at 16px root */
   overflow: hidden;
 }
 
@@ -1331,12 +1436,14 @@ a.crumb-segment--link:hover {
   width: 100%;
 }
 
-.monitor-page .monitor-top-divider-wrap {
+.monitor-page .monitor-top-divider-wrap,
+.incident-page .monitor-top-divider-wrap {
   width: 100%;
   padding: 2rem 0; /* 32px top & bottom around line */
 }
 
-.monitor-page .monitor-top-divider {
+.monitor-page .monitor-top-divider,
+.incident-page .monitor-top-divider {
   width: 100%;
   height: var(--hairline);
   background: #363636;
@@ -2565,6 +2672,7 @@ a.crumb-segment--link:hover {
   align-items: stretch;
   justify-content: flex-start;
   gap: 0;
+  margin-bottom: 0; /* spacing via monitor-top-divider-wrap below header */
 }
 
 .incident-page .page-head.incident-header .incident-header-body {

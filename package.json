@@ -20,7 +20,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "repository": {
     "type": "git",
@@ -28,6 +29,8 @@
   },
   "license": "UNLICENSED",
   "devDependencies": {
-    "vite": "^6.2.0"
+    "@cloudflare/vite-plugin": "^1.39.0",
+    "vite": "^6.2.0",
+    "wrangler": "^4.95.0"
   }
 }
